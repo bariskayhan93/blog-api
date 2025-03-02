@@ -1,0 +1,5 @@
+# Ignore sensitive data files
+BlogApi/appsettings.Development.json
+BlogApi/appsettings.Production.json
+.env
+
