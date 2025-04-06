@@ -1,25 +1,29 @@
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    // Listen on ports from configuration or default to 5077/5078
+    var httpPort = builder.Configuration.GetValue<int?>("ASPNETCORE_HTTP_PORT") ?? 5077;
+    var httpsPort = builder.Configuration.GetValue<int?>("ASPNETCORE_HTTPS_PORT") ?? 5078;
+    
+    serverOptions.ListenAnyIP(httpPort);
+    serverOptions.ListenAnyIP(httpsPort);
+});
+
 var app = builder.Build();
 
-builder.WebHost.UseUrls("http://localhost:5077", "https://localhost:5078");
-
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-else{
+else
+{
     app.UseHttpsRedirection();
 }
-
-app.UseHttpsRedirection();
 
 app.MapGet("/", () => "Hello World!");
 

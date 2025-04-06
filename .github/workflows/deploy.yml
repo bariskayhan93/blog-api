@@ -2,7 +2,7 @@ name: Deploy Blog API
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -10,42 +10,19 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
     - name: Deploy to VPS
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USER }}
-        key: ${{ secrets.VPS_SSH_KEY }}
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          cd /var/www/blog-api
+          cd ~/blog-api
           git pull
-          
-          dotnet restore
-          dotnet build --configuration Release --no-restore
-          dotnet publish BlogApi/BlogApi.csproj --configuration Release --output /var/www/blog-api/publish --no-build
-          
-          # Restart the service (if you have one set up)
-          if [ -f /etc/systemd/system/blogapi.service ]; then
-            sudo systemctl restart blogapi.service
-          else
-            # Create a systemd service if it doesn't exist
-            echo "[Unit]
-            Description=Blog API Service
-            After=network.target
-            
-            [Service]
-            WorkingDirectory=/var/www/blog-api/publish
-            ExecStart=/usr/bin/dotnet /var/www/blog-api/publish/BlogApi.dll
-            Restart=always
-            RestartSec=10
-            SyslogIdentifier=blogapi
-            User=root
-            Environment=ASPNETCORE_ENVIRONMENT=Production
-            
-            [Install]
-            WantedBy=multi-user.target" | sudo tee /etc/systemd/system/blogapi.service
-            
-            sudo systemctl daemon-reload
-            sudo systemctl enable blogapi.service
-            sudo systemctl start blogapi.service
-          fi
+          docker compose down api
+          docker compose build api
+          docker compose up -d api
+          docker system prune -f
