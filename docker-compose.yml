@@ -9,8 +9,10 @@ services:
       - "5078:5078"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      # This is important to override the localhost binding in your Program.cs
       - ASPNETCORE_URLS=http://+:5077;https://+:5078
+      - DB_HOST=${{ secrets.DB_HOST }}
+      - DB_USERNAME=${{ secrets.DB_USER }}
+      - DB_PASSWORD=${{ secrets.DB_PASS }}
     volumes:
       - .:/src
     depends_on:
@@ -20,8 +22,8 @@ services:
     image: postgres:15-alpine
     environment:
       - POSTGRES_DB=blog
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=${{ secrets.DB_USER }}
+      - POSTGRES_PASSWORD=${{ secrets.DB_PASS }}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
