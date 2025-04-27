@@ -8,11 +8,9 @@ services:
       - "5077:5077"
       - "5078:5078"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ASPNETCORE_URLS=http://+:5077;https://+:5078
-      - DB_HOST=${{ secrets.DB_HOST }}
-      - DB_USERNAME=${{ secrets.DB_USER }}
-      - DB_PASSWORD=${{ secrets.DB_PASS }}
+      - ConnectionStrings__DefaultConnection=Host=${DB_HOST};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASS}
     volumes:
       - .:/src
     depends_on:
@@ -21,9 +19,10 @@ services:
   db:
     image: postgres:15-alpine
     environment:
-      - POSTGRES_DB=blog
-      - POSTGRES_USER=${{ secrets.DB_USER }}
-      - POSTGRES_PASSWORD=${{ secrets.DB_PASS }}
+      - DB_HOST=blog-api-db-1
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_NAME=${DB_NAME}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
