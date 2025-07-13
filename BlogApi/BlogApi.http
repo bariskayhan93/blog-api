@@ -1,6 +1,30 @@
 @BlogApi_HostAddress = http://localhost:5077
 
-GET {{BlogApi_HostAddress}}/weatherforecast/
+### Get all blogs
+GET {{BlogApi_HostAddress}}/api/blogs
 Accept: application/json
 
-###
+### Get specific blog
+GET {{BlogApi_HostAddress}}/api/blogs/1
+Accept: application/json
+
+### Create a new blog
+POST {{BlogApi_HostAddress}}/api/blogs
+Content-Type: application/json
+
+{
+  "title": "My First Blog Post",
+  "content": "This is the content of my first blog post. It contains some interesting information about building APIs with .NET."
+}
+
+### Update a blog
+PUT {{BlogApi_HostAddress}}/api/blogs/1
+Content-Type: application/json
+
+{
+  "title": "Updated Blog Title",
+  "content": "This is the updated content for the blog post."
+}
+
+### Delete a blog
+DELETE {{BlogApi_HostAddress}}/api/blogs/1

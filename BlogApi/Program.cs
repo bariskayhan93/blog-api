@@ -23,10 +23,17 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
+try
 {
+    using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<BlogContext>();
-    context.Database.Migrate();
+    await context.Database.MigrateAsync();
+}
+catch (Exception ex)
+{
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogError(ex, "Failed to migrate database");
+    throw;
 }
 
 if (app.Environment.IsDevelopment())
@@ -59,13 +66,24 @@ app.MapPost("/api/blogs", async (Blog blog, BlogContext db) =>
         return Results.BadRequest("Title and Content are required");
     }
 
+    if (blog.Title.Length > 200)
+    {
+        return Results.BadRequest("Title cannot exceed 200 characters");
+    }
+
     blog.CreatedAt = DateTime.UtcNow;
     blog.UpdatedAt = DateTime.UtcNow;
     
-    db.Blogs.Add(blog);
-    await db.SaveChangesAsync();
-    
-    return Results.Created($"/api/blogs/{blog.Id}", blog);
+    try
+    {
+        db.Blogs.Add(blog);
+        await db.SaveChangesAsync();
+        return Results.Created($"/api/blogs/{blog.Id}", blog);
+    }
+    catch
+    {
+        return Results.Problem("Failed to create blog");
+    }
 });
 
 app.MapPut("/api/blogs/{id}", async (int id, Blog updatedBlog, BlogContext db) =>
@@ -78,12 +96,24 @@ app.MapPut("/api/blogs/{id}", async (int id, Blog updatedBlog, BlogContext db) =
         return Results.BadRequest("Title and Content are required");
     }
 
+    if (updatedBlog.Title.Length > 200)
+    {
+        return Results.BadRequest("Title cannot exceed 200 characters");
+    }
+
     blog.Title = updatedBlog.Title;
     blog.Content = updatedBlog.Content;
     blog.UpdatedAt = DateTime.UtcNow;
 
-    await db.SaveChangesAsync();
-    return Results.Ok(blog);
+    try
+    {
+        await db.SaveChangesAsync();
+        return Results.Ok(blog);
+    }
+    catch
+    {
+        return Results.Problem("Failed to update blog");
+    }
 });
 
 app.MapDelete("/api/blogs/{id}", async (int id, BlogContext db) =>
