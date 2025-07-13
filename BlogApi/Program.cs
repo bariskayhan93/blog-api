@@ -1,4 +1,12 @@
+using Microsoft.EntityFrameworkCore;
+using BlogApi.Data;
+using BlogApi.Models;
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Add database
+builder.Services.AddDbContext<BlogContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -25,12 +33,61 @@ else
     app.UseHttpsRedirection();
 }
 
-app.MapGet("/", () => "Hello World!");
+app.MapGet("/", () => "Blog API");
 
-app.MapGet("api/blogs", () => new []
+app.MapGet("/api/blogs", async (BlogContext db) =>
 {
-    new { Id = 1, Title = "First Blog" , Content = "This is the first blog" },
-    new { Id = 2, Title = "Second Blog" , Content = "This is the second blog" }
+    return await db.Blogs.ToListAsync();
+});
+
+app.MapGet("/api/blogs/{id}", async (int id, BlogContext db) =>
+{
+    var blog = await db.Blogs.FindAsync(id);
+    return blog is not null ? Results.Ok(blog) : Results.NotFound();
+});
+
+app.MapPost("/api/blogs", async (Blog blog, BlogContext db) =>
+{
+    if (string.IsNullOrWhiteSpace(blog.Title) || string.IsNullOrWhiteSpace(blog.Content))
+    {
+        return Results.BadRequest("Title and Content are required");
+    }
+
+    blog.CreatedAt = DateTime.UtcNow;
+    blog.UpdatedAt = DateTime.UtcNow;
+    
+    db.Blogs.Add(blog);
+    await db.SaveChangesAsync();
+    
+    return Results.Created($"/api/blogs/{blog.Id}", blog);
+});
+
+app.MapPut("/api/blogs/{id}", async (int id, Blog updatedBlog, BlogContext db) =>
+{
+    var blog = await db.Blogs.FindAsync(id);
+    if (blog is null) return Results.NotFound();
+
+    if (string.IsNullOrWhiteSpace(updatedBlog.Title) || string.IsNullOrWhiteSpace(updatedBlog.Content))
+    {
+        return Results.BadRequest("Title and Content are required");
+    }
+
+    blog.Title = updatedBlog.Title;
+    blog.Content = updatedBlog.Content;
+    blog.UpdatedAt = DateTime.UtcNow;
+
+    await db.SaveChangesAsync();
+    return Results.Ok(blog);
+});
+
+app.MapDelete("/api/blogs/{id}", async (int id, BlogContext db) =>
+{
+    var blog = await db.Blogs.FindAsync(id);
+    if (blog is null) return Results.NotFound();
+
+    db.Blogs.Remove(blog);
+    await db.SaveChangesAsync();
+    return Results.NoContent();
 });
 
 app.Run();
