@@ -1,17 +1,8 @@
-# Ignore sensitive data files
-BlogApi/appsettings.Development.json
-BlogApi/appsettings.Production.json
-.env
-
-#.NET Core
 bin/
 obj/
 
-# macOS system files
+.idea/
+.env
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
 
 design-patterns.md
